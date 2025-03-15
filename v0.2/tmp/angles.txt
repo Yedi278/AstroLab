@@ -1,0 +1,10 @@
+#    DONT'T MODIFY THE COMMENT SECTION 
+#   This file contains the angles for the inner circle
+#   modify by putting angles in DD°MM'SS" format
+#   put only one angle per row and no commas or other symbol
+#
+45°0'0"
+90°0'0"
+135°
+160
+120°
