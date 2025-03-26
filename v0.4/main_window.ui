@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>538</width>
+    <height>647</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QGraphicsView" name="graphicsView"/>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="bottom_layout">
+      <item>
+       <layout class="QVBoxLayout" name="left_layout">
+        <item>
+         <widget class="QPushButton" name="button_1">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_1">
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_2">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="central_layout">
+        <item>
+         <widget class="QPushButton" name="button_3">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="right_layout">
+        <item>
+         <widget class="QPushButton" name="button_4">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>538</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="save">
+    <property name="title">
+     <string>Save</string>
+    </property>
+    <addaction name="save_as"/>
+   </widget>
+   <widget class="QMenu" name="load">
+    <property name="title">
+     <string>Load</string>
+    </property>
+   </widget>
+   <addaction name="save"/>
+   <addaction name="load"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="save_as">
+   <property name="text">
+    <string>Save as</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
