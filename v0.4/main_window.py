@@ -2,11 +2,11 @@ from math import cos, sin, pi
 
 from PyQt5 import QtGui, QtCore
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QTabWidget, QSplitter
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPixmapItem, QGraphicsPolygonItem
 from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem, QGraphicsItemGroup
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap, QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from numpy import inner
 
 
@@ -15,23 +15,37 @@ class MainWindow(QMainWindow):
     def __init__(self, ui:str='main_window.ui'):
         super(QMainWindow, self).__init__()
 
-        uic.loadUi(ui, self)
         self.setWindowTitle('AstroLab')
         
-        self.__size__ = (1600, 1200)
+        self.__size__:QSize = (1800, 1200)
 
-        self.setGeometry(0, 0, *self.__size__)
+        self.setGeometry(0, 0, self.__size__[0], self.__size__[1])
 
-        self.graphicsView.setGeometry(0, 0, self.size().height(), self.size().height())
+        self.setMinimumSize(800, 600)
 
-        self.scene = QGraphicsScene(self.graphicsView)
-        self.graphicsView.setScene(self.scene)
-        self.graphicsView.setSceneRect(0, 0, self.graphicsView.size().width(), self.graphicsView.size().height())
-        self.resizeEvent = lambda event: self.OnRescale(event)
+        self.graphicsView:QGraphicsView = QGraphicsView(self)
+        self.__graph_size__:QSize = self.graphicsView.size()
+
+        self.tabs:QTabWidget = QTabWidget(self)
+
+        self.splitter:QSplitter = QSplitter(self)
+        self.splitter.setOrientation(QtCore.Qt.Horizontal)
+        self.splitter.setChildrenCollapsible(True)
+
+        self.splitter.addWidget(self.tabs)
+        self.splitter.addWidget(self.graphicsView)
+
+        self.splitter.setSizes([self.__size__[0], self.__size__[1]])
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 1)
+
+        self.setCentralWidget(self.splitter)
+
+        self.graphicsView.resizeEvent = lambda event: self.OnRescale(event)
+        self.drawScene()
         
-        self.__graph_size__ = self.graphicsView.size().width(), self.graphicsView.size().height()
-
         self.graphicsView.show()
+
 
     def drawSector(self, center, r, R, w, divisions, labels=None, color: QColor=Qt.red):
 
@@ -59,22 +73,37 @@ class MainWindow(QMainWindow):
             line = QGraphicsLineItem(center[0]+xmin, center[1]+ymin, center[0]+xmax, center[1]+ymax)
             line.setPen(QPen(Qt.black, w, Qt.SolidLine))
             self.scene.addItem(line)
-    
+
+    def drawScene(self, R=100, r=50, w=2, divisions=12):
+
+        center = (self.__graph_size__.width()/2, self.__graph_size__.height()/2)
+
+        color = QColor(255, 0, 0)
+
+        self.scene = QGraphicsScene(self)
+        self.scene.setSceneRect(0, 0, self.__graph_size__.width(), self.__graph_size__.height())
+        self.scene.setBackgroundBrush(QBrush(Qt.white))
+        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+
+        self.graphicsView.setScene(self.scene)
+        self.graphicsView.setRenderHint(QPainter.Antialiasing)
+
+        self.drawSector(center, r, R, w, divisions, color=color)
+
     def OnRescale(self, event=None):
         
-        self.scene.clear()
-        self.graphicsView.setSceneRect(0, 0, self.graphicsView.size().width(), self.graphicsView.size().height())
-        self.__graph_size__ = self.graphicsView.size().width(), self.graphicsView.size().height()
+        self.__graph_size__ = self.graphicsView.size()
+        
+        R = min(self.__graph_size__.width(), self.__graph_size__.height())
+        R = R * 0.4
+        r = R * 0.5
+        w = 2
 
-        R = min(self.__graph_size__) / 3
-        r = R - 100
+        divisions = 12
 
-        center = (self.__graph_size__[0] / 2, self.__graph_size__[1] / 2)
+        self.drawScene(R=R, r=r, w=w, divisions=divisions)
 
-        color = QColor(0, 0, 0, 200)
-        self.drawSector(center=center, r=r, w=3, R=R, divisions=10, color=Qt.red)
 
-        self.scene.update()
 
     def saveScreenshot(self, widget, path:str='shot'):
         screen = QtWidgets.QApplication.primaryScreen()
