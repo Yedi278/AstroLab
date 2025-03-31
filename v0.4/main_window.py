@@ -7,10 +7,8 @@ from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsEllipseIt
 from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem, QGraphicsItemGroup
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap, QColor
 from PyQt5.QtCore import Qt
+from numpy import inner
 
-from pyopengl.OpenGL import GL as gl
-from pyopengl.OpenGL import GLU as glu
-from pyopengl.OpenGL import GLUT as glut
 
 class MainWindow(QMainWindow):
 
@@ -35,26 +33,33 @@ class MainWindow(QMainWindow):
 
         self.graphicsView.show()
 
-    def drawSector(self, center, r, R, divisions, labels=None, color: QColor=Qt.red):
+    def drawSector(self, center, r, R, w, divisions, labels=None, color: QColor=Qt.red):
 
-        # draw a sector
-        circle = QGraphicsEllipseItem(center[0]-R, center[1]-R, 2*R, 2*R)
-        circle.setPen(QPen(color, 2*r, Qt.SolidLine))
-        self.scene.addItem(circle)
-        
+        # draw the outer circle
+        outer_circ = QGraphicsEllipseItem(center[0]-R, center[1]-R, 2*R, 2*R)
+        outer_circ.setPen(QPen(color, w, Qt.SolidLine))
+
+        # draw the inner circle
+        inner_circ = QGraphicsEllipseItem(center[0]-r, center[1]-r, 2*r, 2*r)
+        inner_circ.setPen(QPen(color, w, Qt.SolidLine))
+
+        # add the circles to the scene
+        self.scene.addItem(inner_circ)
+        self.scene.addItem(outer_circ)
+
         # draw sector divisions
         for i in range(divisions):
             angle = 2 * pi * i / divisions
 
-            xmin = (R-r) * cos(angle)
-            ymin = (R-r) * sin(angle)
-            xmax = (R+r) * cos(angle)
-            ymax = (R+r) * sin(angle)
+            xmin = (r) * cos(angle)
+            ymin = (r) * sin(angle)
+            xmax = (R) * cos(angle)
+            ymax = (R) * sin(angle)
 
             line = QGraphicsLineItem(center[0]+xmin, center[1]+ymin, center[0]+xmax, center[1]+ymax)
-            line.setPen(QPen(Qt.black, 4, Qt.SolidLine))
+            line.setPen(QPen(Qt.black, w, Qt.SolidLine))
             self.scene.addItem(line)
-        
+    
     def OnRescale(self, event=None):
         
         self.scene.clear()
@@ -62,16 +67,19 @@ class MainWindow(QMainWindow):
         self.__graph_size__ = self.graphicsView.size().width(), self.graphicsView.size().height()
 
         R = min(self.__graph_size__) / 3
-        r = R / 6
+        r = R - 100
 
         center = (self.__graph_size__[0] / 2, self.__graph_size__[1] / 2)
 
         color = QColor(0, 0, 0, 200)
-        self.drawSector(center=center, r=r, R=R, divisions=10, color=color)
-
-        self.drawSector(center=center, r=r, R=R/2, divisions=10, color=color)
+        self.drawSector(center=center, r=r, w=3, R=R, divisions=10, color=Qt.red)
 
         self.scene.update()
+
+    def saveScreenshot(self, widget, path:str='shot'):
+        screen = QtWidgets.QApplication.primaryScreen()
+        screenshot = screen.grabWindow( widget.winId() )
+        screenshot.save(path, 'jpg')
 
 
 if __name__ == '__main__':
@@ -82,4 +90,5 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
+    window.saveScreenshot(widget=window.graphicsView, path='screenshot.jpg')
     app.exec_()
