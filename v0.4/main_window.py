@@ -1,33 +1,49 @@
 from math import cos, sin, pi
 
+import json
+
 from PyQt5 import QtGui, QtCore
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QTabWidget, QSplitter
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPixmapItem, QGraphicsPolygonItem
-from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem, QGraphicsItemGroup
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap, QColor
+from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QTabWidget, QSplitter, QSlider, QSpinBox, QGraphicsEllipseItem
+from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem
+from PyQt5.QtGui import QBrush, QPen, QColor
 from PyQt5.QtCore import Qt, QSize
-from numpy import inner
 
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, ui:str='main_window.ui'):
+    def __init__(self):
         super(QMainWindow, self).__init__()
 
         self.setWindowTitle('AstroLab')
         
+        self.loadSettings()
+
+
         self.__size__:QSize = (1800, 1600)
-
         self.setGeometry(0, 0, self.__size__[0], self.__size__[1])
-
         self.setMinimumSize(800, 600)
 
+        # find menu bar
+        self.menubar = self.menuBar()
+
+        self.file_menu = self.menubar.addMenu('Load')
+
+        self.edit_menu = self.menubar.addMenu('Save')
+
+        self.settings_menu = self.menubar.addMenu('Settings')
+
+        self.help_menu = self.menubar.addMenu('Help')
+
+        # add Graphics View Widget
         self.graphicsView:QGraphicsView = QGraphicsView(self)
         self.__graph_size__:QSize = self.graphicsView.size()
 
+        # load tabs_widget.ui file
         self.tabs:QTabWidget = QTabWidget(self)
+        uic.loadUi('tabs_widget.ui', self.tabs)
 
+        # add a variable splitter
         self.splitter:QSplitter = QSplitter(self)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setChildrenCollapsible(True)
@@ -37,68 +53,157 @@ class MainWindow(QMainWindow):
 
         self.scene = QGraphicsScene(self)
 
-        # self.splitter.setSizes([self.__size__[0], self.__size__[1]], 1)
-        self.splitter.setStretchFactor(0, 1)
-        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([self.__size__[0]//2, self.__size__[0]//2])
 
         self.setCentralWidget(self.splitter)
 
         self.graphicsView.resizeEvent = lambda event: self.OnRescale(event)
 
-        self.phases = [0, 180, 0, 0]
         self.drawScene()
 
         self.graphicsView.show()
-
-        # load tabs_widget.ui file
-        tabs_widget = uic.loadUi('tabs_widget.ui', self.tabs)
-        self.tabs.setObjectName("tabs")
         
         # reset button 
         self.reset_button = self.tabs.findChild(QtWidgets.QPushButton, "reset_button")
-        self.reset_button.setText("Reset")
 
-        self.reset_button.clicked.connect(self.ResetPhases)
+        self.reset_button.clicked.connect(self.resetPhases)
 
-        self.slider_phase1 = self.tabs.findChild(QtWidgets.QSlider, "slider_phase1")
-        self.slider_phase2 = self.tabs.findChild(QtWidgets.QSlider, "slider_phase2")
-        self.slider_phase3 = self.tabs.findChild(QtWidgets.QSlider, "slider_phase3")
-        self.slider_phase4 = self.tabs.findChild(QtWidgets.QSlider, "slider_phase4")
+        # save button
+        self.save_button = self.tabs.findChild(QtWidgets.QPushButton, "save_button")
 
-        self.label_phase1 = self.tabs.findChild(QtWidgets.QLabel, "label_phase1")
-        self.label_phase2 = self.tabs.findChild(QtWidgets.QLabel, "label_phase2")
-        self.label_phase3 = self.tabs.findChild(QtWidgets.QLabel, "label_phase3")
-        self.label_phase4 = self.tabs.findChild(QtWidgets.QLabel, "label_phase4")
-        
+        self.save_button.clicked.connect(lambda: self.saveScreenshot(self.graphicsView, self.screenshotPath))
+
+        self.slider_phase1:QSlider = self.tabs.findChild(QSlider, "slider_phase1")
+        self.slider_phase2:QSlider = self.tabs.findChild(QSlider, "slider_phase2")
+        self.slider_phase3:QSlider = self.tabs.findChild(QSlider, "slider_phase3")
+        self.slider_phase4:QSlider = self.tabs.findChild(QSlider, "slider_phase4")
+
+        self.sbox_phase1:QSpinBox = self.tabs.findChild(QSpinBox, "sbox_phase1")
+        self.sbox_phase2:QSpinBox = self.tabs.findChild(QSpinBox, "sbox_phase2")
+        self.sbox_phase3:QSpinBox = self.tabs.findChild(QSpinBox, "sbox_phase3")
+        self.sbox_phase4:QSpinBox = self.tabs.findChild(QSpinBox, "sbox_phase4")
+
+        # connect spinboxes changed signal to update phases
+        self.sbox_phase1.valueChanged.connect(self.updatePhases_fromSpinBox)
+        self.sbox_phase2.valueChanged.connect(self.updatePhases_fromSpinBox)
+        self.sbox_phase3.valueChanged.connect(self.updatePhases_fromSpinBox)
+        self.sbox_phase4.valueChanged.connect(self.updatePhases_fromSpinBox)
+
         # connect sliders to update phases
-        self.slider_phase1.valueChanged.connect(self.updatePhases)
-        self.slider_phase2.valueChanged.connect(self.updatePhases)
-        self.slider_phase3.valueChanged.connect(self.updatePhases)
-        self.slider_phase4.valueChanged.connect(self.updatePhases)
+        self.slider_phase1.valueChanged.connect(self.updatePhases_fromSlider)
+        self.slider_phase2.valueChanged.connect(self.updatePhases_fromSlider)
+        self.slider_phase3.valueChanged.connect(self.updatePhases_fromSlider)
+        self.slider_phase4.valueChanged.connect(self.updatePhases_fromSlider)
 
-    def updatePhases(self):
+    def loadSettings(self):
+
+        self.setDefaults()
+        
+        try:
+            with open('settings.json', 'r') as f:
+                settings:dict = json.load(f)
+
+                print(f"settings found: {settings.keys()}")
+                                
+                if "label_sector1" in settings.keys():
+                    self.label_sector1 = settings["label_sector1"]
+
+                if "label_sector2" in settings.keys():
+                    self.label_sector2 = settings["label_sector2"] * 12
+
+                if "label_sector3" in settings.keys():
+                    self.label_sector3 = settings["label_sector3"]
+
+                if "label_sector4" in settings.keys():
+                    self.label_sector4 = settings["label_sector4"]
+
+                if "phases" in settings.keys():
+                    self.phases:list[int] = settings["phases"]
+
+                if "screenshot Path" in settings.keys():
+                    self.screenshotPath:str = settings["screenshot Path"]
+
+
+        except FileNotFoundError:
+            print('Settings not found!, using defaults!')
+            return
+        
+        except json.JSONDecodeError:
+            print('Error Decoding the Json!, Check the settings!')
+            return
+
+        except Exception as e:
+            print("Error loading Settings: ", e)
+            return
+    
+    def setDefaults(self):
+
+        self.label_sector1 = None
+        self.label_sector2 = None
+        self.label_sector3 = None
+        self.label_sector4 = None
+
+        self.phases = [0 for i in range(4)]
+
+        self.screenshotPath = 'tmp/screenshot'
+
+    def updatePhases_fromSlider(self):
+        # update the phases from the sliders
         self.phases[0] = self.slider_phase1.value()
         self.phases[1] = self.slider_phase2.value()
         self.phases[2] = self.slider_phase3.value()
         self.phases[3] = self.slider_phase4.value()
 
-        self.label_phase1.setText(f"Phase 1: {self.phases[0]}°")
-        self.label_phase2.setText(f"Phase 2: {self.phases[1]}°")
-        self.label_phase3.setText(f"Phase 3: {self.phases[2]}°")
-        self.label_phase4.setText(f"Phase 4: {self.phases[3]}°")
-
+        # update the spinboxes
+        self.sbox_phase1.setValue(self.phases[0])
+        self.sbox_phase2.setValue(self.phases[1])
+        self.sbox_phase3.setValue(self.phases[2])
+        self.sbox_phase4.setValue(self.phases[3])
+        
         # update the scene
-        self.drawScene()
         self.OnRescale()
 
-    def ResetPhases(self):
-        self.phases = [0, 0, 0, 0]
-        self.drawScene()
+    def updatePhases_fromSpinBox(self):
+
+        self.phases[0] = self.sbox_phase1.value()
+        self.phases[1] = self.sbox_phase2.value()
+        self.phases[2] = self.sbox_phase3.value()
+        self.phases[3] = self.sbox_phase4.value()
+
+        # update the sliders
+        self.slider_phase1.setValue(self.phases[0])
+        self.slider_phase2.setValue(self.phases[1])
+        self.slider_phase3.setValue(self.phases[2])
+        self.slider_phase4.setValue(self.phases[3])
+
+        #update the scene
         self.OnRescale()
 
-    def drawSector(self, center, r, R, w, divisions, labels=None, color: QColor=Qt.red, phase=0):
+    def resetPhases(self):
+
+        for i in self.phases:
+            i = 0
+        
+        self.sbox_phase1.setValue(0)
+        self.sbox_phase2.setValue(0)
+        self.sbox_phase3.setValue(0)
+        self.sbox_phase4.setValue(0)
+
+        self.slider_phase1.setValue(0)
+        self.slider_phase2.setValue(0)
+        self.slider_phase3.setValue(0)
+        self.slider_phase4.setValue(0)
+
+        self.OnRescale()
+
+    def drawSector(self, center, r, R, w, divisions, labels=None, color:QColor=Qt.red, phase=0):
 
         phase = -(phase + 180)
+
+        if labels is not None:
+            if len(labels) != divisions:
+                raise ValueError("Number of labels must be equal to the number of divisions, {} != {}".format(len(labels), divisions))
+
         # draw the outer circle
         outer_circ = QGraphicsEllipseItem(center[0]-R, center[1]-R, 2*R, 2*R)
         outer_circ.setPen(QPen(color, w, Qt.SolidLine))
@@ -111,6 +216,8 @@ class MainWindow(QMainWindow):
         self.scene.addItem(inner_circ)
         self.scene.addItem(outer_circ)
 
+        pen = QPen(color, w, Qt.SolidLine)
+        font = QtGui.QFont("Arial", 10, QtGui.QFont.Bold)
 
         # draw sector divisions
         for i in range(divisions):
@@ -122,19 +229,20 @@ class MainWindow(QMainWindow):
             ymax = (R) * sin(angle)
 
             line = QGraphicsLineItem(center[0]+xmin, center[1]+ymin, center[0]+xmax, center[1]+ymax)
-            line.setPen(QPen(color, w, Qt.SolidLine))
+            line.setPen(pen)
             self.scene.addItem(line)
-
-        # draw the labels
-        if labels is not None:
-            for i in range(len(labels)):
-                angle = 2 * pi * i / divisions + (pi * phase / 180)
-                x = (R + r) / 2 * cos(angle)
-                y = (R + r) / 2 * sin(angle)
-
-                text_item = QGraphicsTextItem(labels[i])
-                text_item.setPos(center[0] + x, center[1] + y)
+            
+            if labels is None:
+                continue
+            else:
+                text_item = QGraphicsTextItem(labels[-i])
+                text_item.setPos(center[0] + xmin, center[1] + ymin)
                 text_item.setDefaultTextColor(color)
+                # add border to the text item
+
+                text_item.setFont(font)
+                text_item.setRotation(i * 360 / divisions + phase - 90)
+
                 self.scene.addItem(text_item)
 
         # draw first line
@@ -150,21 +258,17 @@ class MainWindow(QMainWindow):
 
         center = (self.__graph_size__.width()/2, self.__graph_size__.height()/2)
 
-        color = QColor(0, 0, 0, 255)
-
         self.scene.clear()
         self.scene.setSceneRect(0, 0, self.__graph_size__.width(), self.__graph_size__.height())
         self.scene.setBackgroundBrush(QBrush(Qt.white))
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
         self.graphicsView.setScene(self.scene)
-        self.graphicsView.setRenderHint(QPainter.Antialiasing)
 
-        self.drawSector(center, r=R*0.9, R=R, w=w, divisions=12, color=color, phase=self.phases[0], labels=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
-
-        self.drawSector(center, r=R*0.7, R=R*0.8, w=w, divisions=9*12, color=color, phase=self.phases[1])
-        self.drawSector(center, r=R*0.5, R=R*0.6, w=w, divisions=27, color=color, phase=self.phases[2])
-        self.drawSector(center, r=R*0.3, R=R*0.4, w=w, divisions=12, color=color, phase=self.phases[3])
+        self.drawSector(center, r=R*0.9, R=R,     w=w, divisions=12, color=Qt.black, phase=self.phases[0], labels=self.label_sector1)
+        self.drawSector(center, r=R*0.7, R=R*0.8, w=w, divisions=9*12, color=Qt.black, phase=self.phases[1], labels=self.label_sector2)
+        self.drawSector(center, r=R*0.5, R=R*0.6, w=w, divisions=27, color=Qt.black, phase=self.phases[2], labels=self.label_sector3)
+        self.drawSector(center, r=R*0.3, R=R*0.4, w=w, divisions=12, color=Qt.black, phase=self.phases[3], labels=self.label_sector4)
 
         self.scene.update()
 
@@ -189,10 +293,8 @@ class MainWindow(QMainWindow):
 
         self.drawScene(R=R, w=w)
 
+    def saveScreenshot(self, widget, path:str):
 
-
-
-    def saveScreenshot(self, widget, path:str='shot'):
         screen = QtWidgets.QApplication.primaryScreen()
         screenshot = screen.grabWindow( widget.winId() )
         screenshot.save(path, 'jpg')
@@ -206,5 +308,4 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    window.saveScreenshot(widget=window.graphicsView, path='screenshot.jpg')
     app.exec_()

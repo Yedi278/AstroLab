@@ -1,0 +1,15 @@
+{
+    "phases" : [ 0, 0, 0, 0],
+
+    "label_sector1": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ],
+
+    "label_sector2": ["A", "B", "C", "D", "E", "F", "G", "H", "I" ],
+
+    "label_sector3": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA" ],
+
+    "label_sector4": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ],
+
+    "screenshot Path": "tmp/screenshot2"
+
+    
+}
