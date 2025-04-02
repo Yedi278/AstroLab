@@ -5,9 +5,11 @@ import json
 from PyQt5 import QtGui, QtCore
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QTabWidget, QSplitter, QSlider, QSpinBox, QGraphicsEllipseItem
-from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem
+from PyQt5.QtWidgets import QGraphicsLineItem, QGraphicsTextItem, QPushButton
 from PyQt5.QtGui import QBrush, QPen, QColor
 from PyQt5.QtCore import Qt, QSize
+
+from AboutMessage import AboutMessage
 
 
 class MainWindow(QMainWindow):
@@ -19,21 +21,27 @@ class MainWindow(QMainWindow):
         
         self.loadSettings()
 
-
         self.__size__:QSize = (1800, 1600)
         self.setGeometry(0, 0, self.__size__[0], self.__size__[1])
         self.setMinimumSize(800, 600)
 
-        # find menu bar
+        # menu bar
         self.menubar = self.menuBar()
 
         self.file_menu = self.menubar.addMenu('Load')
+        self.file_menu.addAction('Load Settings', self.loadSettings)
+        self.file_menu.addAction('Load from File', lambda: self.loadSettings() )
 
         self.edit_menu = self.menubar.addMenu('Save')
+        self.edit_menu.addAction('Save Settings', lambda: self.saveScreenshot(self.graphicsView, self.screenshotPath))
 
         self.settings_menu = self.menubar.addMenu('Settings')
 
         self.help_menu = self.menubar.addMenu('Help')
+
+        self.about_menu = AboutMessage(self)
+        self.help_menu.addAction('About', self.about_menu.exec_)
+        self.help_menu.addAction('Update')
 
         # add Graphics View Widget
         self.graphicsView:QGraphicsView = QGraphicsView(self)
@@ -95,12 +103,18 @@ class MainWindow(QMainWindow):
         self.slider_phase3.valueChanged.connect(self.updatePhases_fromSlider)
         self.slider_phase4.valueChanged.connect(self.updatePhases_fromSlider)
 
-    def loadSettings(self):
+    def loadSettings(self, path:str='settings.json'):
+        '''
+        Load settings from a json file.
+        
+        @param path: str, path to the json file.
+        @return: None
+        '''
 
         self.setDefaults()
         
         try:
-            with open('settings.json', 'r') as f:
+            with open(path, 'r') as f:
                 settings:dict = json.load(f)
 
                 print(f"settings found: {settings.keys()}")
@@ -122,7 +136,6 @@ class MainWindow(QMainWindow):
 
                 if "screenshot Path" in settings.keys():
                     self.screenshotPath:str = settings["screenshot Path"]
-
 
         except FileNotFoundError:
             print('Settings not found!, using defaults!')
@@ -254,8 +267,15 @@ class MainWindow(QMainWindow):
         line.setPen(QPen(Qt.red, 2*w, Qt.SolidLine))
         self.scene.addItem(line)
 
-    def drawScene(self, R=100, w=2):
+    def drawScene(self):
+        '''
+        Draw the scene with the sectors and labels.
+        
+        ``Note``: The scene is cleared before drawing the new sectors.
+        '''
 
+        R = 0.4 * min(self.__graph_size__.width(), self.__graph_size__.height())
+        w = 4
         center = (self.__graph_size__.width()/2, self.__graph_size__.height()/2)
 
         self.scene.clear()
@@ -288,10 +308,7 @@ class MainWindow(QMainWindow):
         
         self.__graph_size__ = self.graphicsView.size()
         
-        R = 0.4 * min(self.__graph_size__.width(), self.__graph_size__.height())
-        w = 4
-
-        self.drawScene(R=R, w=w)
+        self.drawScene()
 
     def saveScreenshot(self, widget, path:str):
 

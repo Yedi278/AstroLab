@@ -1,7 +1,7 @@
 {
     "phases" : [ 0, 0, 0, 0],
 
-    "label_sector1": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ],
+    "label_sector1": ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Saggittarius", "Capricorn", "Aquarius", "Pisces" ],
 
     "label_sector2": ["A", "B", "C", "D", "E", "F", "G", "H", "I" ],
 
@@ -10,6 +10,5 @@
     "label_sector4": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ],
 
     "screenshot Path": "tmp/screenshot2"
-
     
 }
