@@ -7,7 +7,7 @@
 
     "label_sector3": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA" ],
 
-    "label_sector4": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ],
+    "label_sector4": ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" ],
 
     "screenshot Path": "tmp/screenshot2"
     

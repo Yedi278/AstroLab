@@ -1,6 +1,6 @@
-from math import cos, sin, pi
-
 import json
+
+from math import cos, sin, pi
 
 from PyQt5 import QtGui, QtCore
 from PyQt5 import QtWidgets, uic
@@ -10,7 +10,6 @@ from PyQt5.QtGui import QBrush, QPen, QColor
 from PyQt5.QtCore import Qt, QSize
 
 from AboutMessage import AboutMessage
-
 
 class MainWindow(QMainWindow):
 
@@ -274,7 +273,7 @@ class MainWindow(QMainWindow):
         ``Note``: The scene is cleared before drawing the new sectors.
         '''
 
-        R = 0.4 * min(self.__graph_size__.width(), self.__graph_size__.height())
+        R = 0.45 * min(self.__graph_size__.width(), self.__graph_size__.height())
         w = 4
         center = (self.__graph_size__.width()/2, self.__graph_size__.height()/2)
 
@@ -286,9 +285,20 @@ class MainWindow(QMainWindow):
         self.graphicsView.setScene(self.scene)
 
         self.drawSector(center, r=R*0.9, R=R,     w=w, divisions=12, color=Qt.black, phase=self.phases[0], labels=self.label_sector1)
-        self.drawSector(center, r=R*0.7, R=R*0.8, w=w, divisions=9*12, color=Qt.black, phase=self.phases[1], labels=self.label_sector2)
-        self.drawSector(center, r=R*0.5, R=R*0.6, w=w, divisions=27, color=Qt.black, phase=self.phases[2], labels=self.label_sector3)
-        self.drawSector(center, r=R*0.3, R=R*0.4, w=w, divisions=12, color=Qt.black, phase=self.phases[3], labels=self.label_sector4)
+        self.drawSector(center, r=R*0.8, R=R*0.9, w=w, divisions=9*12, color=Qt.black, phase=self.phases[0], labels=self.label_sector2)
+        self.drawSector(center, r=R*0.7, R=R*0.8, w=w, divisions=27, color=Qt.black, phase=self.phases[0], labels=self.label_sector3)
+        self.drawSector(center, r=R*0.6, R=R*0.7, w=w, divisions=1, color=Qt.black, phase=0, labels=None)
+        self.drawSector(center, r=R*0.5, R=R*0.6, w=w, divisions=12, color=Qt.black, phase=self.phases[3], labels=self.label_sector4)
+
+        line = QGraphicsLineItem(center[0], center[1], center[0]-R-R/10, center[1])
+        line.setPen(QPen(Qt.black, 1.5*w, Qt.SolidLine))
+        self.scene.addItem(line)
+
+        text = QGraphicsTextItem("Asc")
+        text.setPos(center[0]-R-R/10, center[1]-R/10)
+        text.setDefaultTextColor(Qt.black)
+        text.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Bold))
+        self.scene.addItem(text)
 
         self.scene.update()
 
